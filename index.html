@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTM Analytics Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    :root {
+      --ink: #0f0f0f;
+      --ink-2: #3a3a3a;
+      --ink-3: #888;
+      --ink-4: #bbb;
+      --paper: #ffffff;
+      --paper-2: #f7f6f3;
+      --paper-3: #efefeb;
+      --accent: #1a5cff;
+      --accent-soft: #e8eeff;
+      --green: #0d7a55;
+      --green-soft: #e6f4ef;
+      --red: #c0392b;
+      --red-soft: #fdecea;
+      --amber: #b45309;
+      --amber-soft: #fef3e2;
+      --border: #e5e3dc;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+      --shadow-lg: 0 4px 24px rgba(0,0,0,0.10);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* HEADER */
+    .top-bar {
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      background: var(--paper);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      letter-spacing: -0.3px;
+      color: var(--ink);
+    }
+    .logo span { color: var(--accent); }
+    .badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--paper-3);
+      color: var(--ink-3);
+      letter-spacing: 0.02em;
+    }
+
+    /* NAV TABS */
+    .nav {
+      padding: 0 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0;
+    }
+    .nav-tab {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 14px 20px;
+      cursor: pointer;
+      color: var(--ink-3);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .nav-tab:hover { color: var(--ink); }
+    .nav-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+
+    /* MAIN CONTENT */
+    .main { padding: 36px 40px; max-width: 1200px; }
+
+    /* KPI CARDS */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .kpi {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      transition: box-shadow 0.2s;
+    }
+    .kpi:hover { box-shadow: var(--shadow); }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    .kpi-value {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .kpi-value.green { color: var(--green); }
+    .kpi-value.amber { color: var(--amber); }
+    .kpi-sub { font-size: 11px; color: var(--ink-4); }
+    .kpi-chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-top: 6px;
+    }
+    .kpi-chip.green { background: var(--green-soft); color: var(--green); }
+    .kpi-chip.amber { background: var(--amber-soft); color: var(--amber); }
+
+    /* CHARTS */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      transition: box-shadow 0.2s;
+    }
+    .card:hover { box-shadow: var(--shadow); }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 3px;
+    }
+    .card-sub {
+      font-size: 11px;
+      color: var(--ink-3);
+      margin-bottom: 18px;
+    }
+    .full-width { grid-column: 1 / -1; }
+
+    /* CONVERSION TABLE */
+    .conv-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--paper-3);
+    }
+    .conv-row:last-child { border-bottom: none; }
+    .conv-label { font-size: 12px; color: var(--ink-2); width: 160px; flex-shrink: 0; }
+    .conv-track { flex: 1; height: 6px; background: var(--paper-3); border-radius: 3px; overflow: hidden; }
+    .conv-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .conv-pct { font-size: 12px; font-weight: 600; width: 48px; text-align: right; }
+    .conv-row.danger .conv-label { font-weight: 600; }
+    .conv-row.danger .conv-pct { color: var(--red); }
+    .conv-row.danger .conv-fill { background: var(--red); }
+    .conv-row.good .conv-fill { background: var(--green); }
+    .conv-row.good .conv-pct { color: var(--green); }
+    .conv-row.normal .conv-fill { background: var(--accent); }
+    .conv-row.normal .conv-pct { color: var(--accent); }
+    .warn-tag {
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--red-soft);
+      color: var(--red);
+      padding: 1px 7px;
+      border-radius: 20px;
+    }
+
+    /* AGENT TAB */
+    .agent-wrap { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+    .agent-sidebar {
+      background: var(--paper-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+    .agent-sidebar-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .agent-sidebar-desc { font-size: 12px; color: var(--ink-3); margin-bottom: 20px; line-height: 1.5; }
+    .sidebar-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); margin-bottom: 10px; }
+    .suggestion-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--ink-2);
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: all 0.15s;
+      line-height: 1.4;
+    }
+    .suggestion-btn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .agent-main {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      height: 580px;
+    }
+    .agent-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .agent-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px var(--green-soft);
+    }
+    .agent-header-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .agent-header-sub { font-size: 11px; color: var(--ink-3); margin-left: auto; }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .msg {
+      max-width: 82%;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 12px 16px;
+      border-radius: 12px;
+      animation: fadeUp 0.2s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: var(--ink);
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .msg.agent {
+      align-self: flex-start;
+      background: var(--paper-2);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+    .msg.thinking {
+      align-self: flex-start;
+      background: var(--paper-2);
+      color: var(--ink-3);
+      font-style: italic;
+      border: 1px solid var(--border);
+    }
+    .thinking-dots::after {
+      content: '...';
+      animation: dots 1.2s steps(3, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+    .agent-input-area {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .agent-input {
+      flex: 1;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: var(--paper-2);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .agent-input:focus { border-color: var(--accent); background: var(--paper); }
+    .send-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: var(--accent); transform: scale(1.05); }
+    .send-btn svg { width: 16px; height: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">GTM <span>Analytics</span> Agent</div>
+  <div class="badge">1,000 deals · B2B SaaS · Synthetic dataset</div>
+</div>
+
+<nav class="nav">
+  <button class="nav-tab active" onclick="showTab('dashboard', this)">Dashboard</button>
+  <button class="nav-tab" onclick="showTab('agent', this)">Ask the agent</button>
+</nav>
+
+<div class="main">
+
+  <!-- DASHBOARD TAB -->
+  <div id="tab-dashboard">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Win rate</div>
+        <div class="kpi-value green">58.8%</div>
+        <div class="kpi-sub">70 won · 49 lost</div>
+        <div class="kpi-chip green">Healthy</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Open pipeline</div>
+        <div class="kpi-value">$222M</div>
+        <div class="kpi-sub">881 open deals</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Coverage ratio</div>
+        <div class="kpi-value green">3.7x</div>
+        <div class="kpi-sub">vs $60M target</div>
+        <div class="kpi-chip green">On track</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Weighted forecast</div>
+        <div class="kpi-value">$87M</div>
+        <div class="kpi-sub">probability-adjusted</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Avg deal size</div>
+        <div class="kpi-value">$254K</div>
+        <div class="kpi-sub">all segments</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Critical drop-off</div>
+        <div class="kpi-value amber">60.6%</div>
+        <div class="kpi-sub">Proposal → Neg</div>
+        <div class="kpi-chip amber">Needs attention</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Pipeline funnel</div>
+        <div class="card-sub">Deal counts by stage</div>
+        <div style="height:220px;position:relative"><canvas id="funnelChart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Stage conversion rates</div>
+        <div class="card-sub">% of deals advancing to next stage</div>
+        <div style="margin-top:4px">
+          <div class="conv-row good">
+            <div class="conv-label">Prospecting → Qual</div>
+            <div class="conv-track"><div class="conv-fill" style="width:80%"></div></div>
+            <div class="conv-pct">79.9%</div>
+          </div>
+          <div class="conv-row good">
+            <div class="conv-label">Qual → Demo</div>
+            <div class="conv-track"><div class="conv-fill" style="width:80%"></div></div>
+            <div class="conv-pct">80.2%</div>
+          </div>
+          <div class="conv-row good">
+            <div class="conv-label">Demo → Proposal</div>
+            <div class="conv-track"><div class="conv-fill" style="width:93%"></div></div>
+            <div class="conv-pct">93.4%</div>
+          </div>
+          <div class="conv-row danger">
+            <div class="conv-label">Proposal → Neg <span class="warn-tag">⚠ Bottleneck</span></div>
+            <div class="conv-track"><div class="conv-fill" style="width:61%"></div></div>
+            <div class="conv-pct">60.6%</div>
+          </div>
+          <div class="conv-row normal">
+            <div class="conv-label">Neg → Closed Won</div>
+            <div class="conv-track"><div class="conv-fill" style="width:75%"></div></div>
+            <div class="conv-pct">74.5%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Win rate by segment</div>
+        <div class="card-sub">Closed deals only · SMB leads</div>
+        <div style="height:200px;position:relative"><canvas id="segmentChart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Avg deal size by industry</div>
+        <div class="card-sub">$K · Technology leads the pack</div>
+        <div style="height:200px;position:relative"><canvas id="industryChart"></canvas></div>
+      </div>
+
+      <div class="card full-width">
+        <div class="card-title">Rep leaderboard</div>
+        <div class="card-sub">Top reps by average deal size — proxy for deal quality</div>
+        <div style="height:180px;position:relative"><canvas id="repChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT TAB -->
+  <div id="tab-agent" style="display:none">
+    <div class="agent-wrap">
+      <div class="agent-sidebar">
+        <div class="agent-sidebar-title">Pipeline Intelligence</div>
+        <div class="agent-sidebar-desc">Ask why questions about the numbers. Scoped to this dataset only — no hallucinations about data that isn't here.</div>
+        <div class="sidebar-section">Try asking</div>
+        <button class="suggestion-btn" onclick="ask('Why did win rate drop?')">Why did win rate drop?</button>
+        <button class="suggestion-btn" onclick="ask('Which stage has the most slippage?')">Which stage has the most slippage?</button>
+        <button class="suggestion-btn" onclick="ask('Which segment is underperforming?')">Which segment is underperforming?</button>
+        <button class="suggestion-btn" onclick="ask('Is our pipeline coverage healthy?')">Is our pipeline coverage healthy?</button>
+        <button class="suggestion-btn" onclick="ask('Why is Proposal to Negotiation conversion so low?')">Why is Proposal → Neg so low?</button>
+        <button class="suggestion-btn" onclick="ask('Which industry should we prioritize?')">Which industry to prioritize?</button>
+      </div>
+
+      <div class="agent-main">
+        <div class="agent-header">
+          <div class="agent-dot"></div>
+          <div class="agent-header-title">GTM Agent</div>
+          <div class="agent-header-sub">1,000 deals loaded</div>
+        </div>
+        <div class="messages" id="messages">
+          <div class="msg agent">Pipeline loaded. Win rate 58.8%, coverage 3.7x, biggest drop-off at Proposal→Negotiation (60.6%). Ask me why.</div>
+        </div>
+        <div class="agent-input-area">
+          <input class="agent-input" id="userInput" type="text" placeholder="Ask a why question about the pipeline..." onkeydown="if(event.key==='Enter') sendMsg()" />
+          <button class="send-btn" onclick="sendMsg()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SYSTEM = `You are a GTM analytics agent. You have access to a B2B SaaS sales pipeline dataset with 1,000 deals.
+
+Key metrics:
+- Overall win rate: 58.8% (70 won, 49 lost out of 119 closed)
+- Open pipeline: $222M across 881 open deals
+- Pipeline coverage ratio: 3.7x vs $60M quarterly target (healthy — benchmark is 3-4x)
+- Weighted forecast: $87M (probability-adjusted by stage)
+- Stage funnel: Prospecting 259, Qualification 207, Demo 166, Proposal 155, Negotiation 94, Closed Won 70, Closed Lost 49
+- Stage conversion rates: Prospecting→Qual 79.9%, Qual→Demo 80.2%, Demo→Proposal 93.4%, Proposal→Negotiation 60.6% (WARNING — biggest drop-off), Negotiation→Won 74.5%
+- Avg days in stage: Prospecting 44.5, Qual 45.7, Demo 45.8, Proposal 42.8, Negotiation 45.1, Closed Won 41.5, Closed Lost 46.0
+- Win rate by segment: SMB 62.5%, Mid-Market 59.6%, Enterprise 53.1%
+- Avg deal size by segment: SMB $256K, Mid-Market $250K, Enterprise $256K
+- Avg deal size by industry: Technology $262K, Professional Services $259K, Financial Services $253K, Retail $253K, Healthcare $250K, Manufacturing $246K
+- Stage close probabilities: Prospecting 10%, Qualification 20%, Demo 35%, Proposal 50%, Negotiation 75%
+
+Rules:
+- Only answer questions about this pipeline dataset
+- Always cite specific numbers
+- Be direct, give one actionable recommendation per finding
+- Keep answers to 3-5 sentences max`;
+
+const history = [];
+
+function showTab(name, el) {
+  document.getElementById('tab-dashboard').style.display = name === 'dashboard' ? 'block' : 'none';
+  document.getElementById('tab-agent').style.display = name === 'agent' ? 'block' : 'none';
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function ask(q) {
+  showTab('agent', document.querySelectorAll('.nav-tab')[1]);
+  document.getElementById('userInput').value = q;
+  sendMsg();
+}
+
+async function sendMsg() {
+  const input = document.getElementById('userInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  addMsg(q, 'user');
+  const thinking = addMsg('', 'agent thinking');
+  thinking.innerHTML = '<span class="thinking-dots">Thinking</span>';
+  history.push({ role: 'user', content: q });
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history, system: SYSTEM }),
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Something went wrong.';
+    thinking.remove();
+    addMsg(reply, 'agent');
+    history.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    thinking.remove();
+    addMsg('Error reaching the agent. Check that ANTHROPIC_API_KEY is set in Vercel environment variables.', 'agent');
+  }
+}
+
+function addMsg(text, cls) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.textContent = text;
+  const msgs = document.getElementById('messages');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+// CHARTS
+new Chart(document.getElementById('funnelChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Prospecting','Qualification','Demo','Proposal','Negotiation','Won','Lost'],
+    datasets: [{ data: [259,207,166,155,94,70,49], backgroundColor: ['#1a5cff','#1a5cff','#1a5cff','#1a5cff','#1a5cff','#0d7a55','#c0392b'], borderWidth: 0, borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10, family: 'DM Sans' }, maxRotation: 30 }, grid: { display: false } }, y: { ticks: { font: { size: 10, family: 'DM Sans' } }, grid: { color: '#f0ede6' } } } }
+});
+
+new Chart(document.getElementById('segmentChart'), {
+  type: 'bar',
+  data: {
+    labels: ['SMB','Mid-Market','Enterprise'],
+    datasets: [{ data: [62.5, 59.6, 53.1], backgroundColor: ['#0d7a55','#1a5cff','#b45309'], borderWidth: 0, borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 45, max: 70, ticks: { callback: v => v+'%', font: { size: 10, family: 'DM Sans' } }, grid: { color: '#f0ede6' } }, x: { ticks: { font: { size: 11, family: 'DM Sans' } }, grid: { display: false } } } }
+});
+
+new Chart(document.getElementById('industryChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Technology','Prof. Svcs','Fin. Svcs','Retail','Healthcare','Mfg'],
+    datasets: [{ data: [262,259,253,253,250,246], backgroundColor: '#1a5cff', borderWidth: 0, borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10, family: 'DM Sans' }, maxRotation: 30 }, grid: { display: false } }, y: { min: 235, ticks: { callback: v => '$'+v+'K', font: { size: 10, family: 'DM Sans' } }, grid: { color: '#f0ede6' } } } }
+});
+
+new Chart(document.getElementById('repChart'), {
+  type: 'bar',
+  data: {
+    labels: ['V. Pedlow','C. Fidian','N. Beckensall','F. Muldownie','C. Abatelli','B. Grumble','A. Ritchman','W. Dunton','A. Ygoe','J. Lammie'],
+    datasets: [{ data: [500,499,497,495,482,482,482,481,498,498], backgroundColor: '#0f0f0f', borderWidth: 0, borderRadius: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10, family: 'DM Sans' }, maxRotation: 30 }, grid: { display: false } }, y: { min: 470, ticks: { callback: v => '$'+v+'K', font: { size: 10, family: 'DM Sans' } }, grid: { color: '#f0ede6' } } } }
+});
+</script>
+</body>
+</html>
